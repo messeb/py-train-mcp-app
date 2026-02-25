@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="color-scheme" content="light dark">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #f0f4f9;
+      --surface:    #ffffff;
+      --surface-2:  #f0f4f9;
+      --border:     #dadce0;
+      --text:       #202124;
+      --text-dim:   #5f6368;
+      --accent:     #1a73e8;
+      --accent-hover: #1557b0;
+      --green:      #1e8e3e;
+      --red:        #d93025;
+      --chip-bg:    #e8f0fe;
+      --chip-color: #1a73e8;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:         #202124;
+        --surface:    #2d2e31;
+        --surface-2:  #3c3c3f;
+        --border:     #5f6368;
+        --text:       #e8eaed;
+        --text-dim:   #9aa0a6;
+        --accent:     #8ab4f8;
+        --accent-hover: #aecbfa;
+        --green:      #81c995;
+        --red:        #f28b82;
+        --chip-bg:    #28292c;
+        --chip-color: #8ab4f8;
+      }
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Google Sans', Roboto, system-ui, sans-serif;
+      padding: 20px 16px;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Search card ── */
+    .search-card {
+      background: var(--surface);
+      border-radius: 24px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+    }
+
+    .search-card h1 {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 16px;
+      letter-spacing: -0.1px;
+    }
+
+    /* ── Unified search bar ── */
+    .search-bar {
+      display: flex;
+      align-items: stretch;
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      background: var(--bg);
+    }
+
+    .search-bar:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+    }
+
+    .sf {                         /* search field */
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px;
+      flex: 1;
+      min-width: 0;
+      height: 56px;
+    }
+
+    .sf + .sf { border-left: 1px solid var(--border); }
+
+    .sf:focus-within { background: var(--surface); }
+
+    .sf svg { flex-shrink: 0; color: var(--text-dim); }
+
+    .sf-body { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+
+    .sf-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+
+    .sf-body input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      width: 100%;
+    }
+
+    .sf-body input::placeholder { color: var(--text-dim); font-weight: 400; }
+
+    /* datetime-local — hide native label on webkit */
+    input[type=datetime-local]::-webkit-calendar-picker-indicator {
+      opacity: 0.5;
+      cursor: pointer;
+      filter: invert(var(--dt-invert, 0));
+    }
+
+    @media (prefers-color-scheme: dark) {
+      input[type=datetime-local]::-webkit-calendar-picker-indicator { --dt-invert: 1; }
+    }
+
+    /* ── Mode chips ── */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text-dim);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s, border-color 0.1s, color 0.1s;
+    }
+
+    .chip input { display: none; }
+
+    .chip:has(input:checked) {
+      background: var(--chip-bg);
+      border-color: var(--accent);
+      color: var(--chip-color);
+    }
+
+    /* ── Search button ── */
+    .btn-row {
+      display: flex;
+      justify-content: center;
+    }
+
+    #btn-search {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 32px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.2px;
+      transition: background 0.15s, box-shadow 0.15s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+
+    #btn-search:hover:not(:disabled) {
+      background: var(--accent-hover);
+      box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    }
+
+    #btn-search:disabled {
+      background: var(--border);
+      color: var(--text-dim);
+      cursor: default;
+      box-shadow: none;
+    }
+
+    /* ── Error box ── */
+    .error-box {
+      display: none;
+      background: color-mix(in srgb, var(--red) 12%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--red) 35%, transparent);
+      color: var(--red);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+
+    /* ── Board meta line ── */
+    .board-meta {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+      font-weight: 500;
+      padding: 0 4px;
+    }
+
+    /* ── Status ── */
+    #status {
+      color: var(--text-dim);
+      font-size: 13px;
+      font-style: italic;
+      text-align: center;
+      padding: 32px 0;
+    }
+
+    /* ── Results table ── */
+    .results-card {
+      background: var(--surface);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; cursor: pointer; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface-2); }
+    tbody tr.cancelled-row td { opacity: 0.45; text-decoration: line-through; }
+
+    td { padding: 12px 14px; font-size: 13px; vertical-align: middle; }
+
+    .train-badge {
+      display: inline-block;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+
+    .destination { font-weight: 600; }
+
+    .via {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+
+    .pf-badge {
+      display: inline-block;
+      background: var(--surface-2);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      min-width: 28px;
+      text-align: center;
+    }
+
+    .time { font-variant-numeric: tabular-nums; font-weight: 500; }
+    .rt-time { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--red); }
+
+    .status-ok   { color: var(--green); font-weight: 600; font-size: 12px; }
+    .status-late { color: var(--red);   font-weight: 600; font-size: 12px; }
+    .status-canc { color: var(--red);   font-weight: 700; font-size: 12px; }
+
+    /* ── Journey panel ── */
+    .journey-panel {
+      background: var(--surface);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+      margin-bottom: 20px;
+    }
+
+    .journey-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+
+    .btn-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: background .1s;
+      flex-shrink: 0;
+    }
+    .btn-back:hover { background: var(--bg); }
+
+    .journey-title { font-size: 15px; font-weight: 600; }
+    .journey-subtitle { font-size: 12px; color: var(--text-dim); margin-top: 1px; }
+
+    /* ── Stops timeline ── */
+    .stops-list {
+      padding: 8px 20px 16px 20px;
+      position: relative;
+    }
+
+    .stop {
+      display: flex;
+      gap: 16px;
+      position: relative;
+      padding: 10px 0;
+    }
+
+    /* vertical connecting line */
+    .stop:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: 26px;
+      bottom: -10px;
+      width: 2px;
+      background: var(--border);
+    }
+
+    .stop-dot {
+      flex-shrink: 0;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      background: var(--surface);
+      margin-top: 3px;
+      position: relative;
+      z-index: 1;
+    }
+    .stop.stop-endpoint .stop-dot { background: var(--accent); }
+    .stop.stop-cancelled .stop-dot { border-color: var(--red); background: var(--red); }
+    .stop.stop-cancelled { opacity: 0.5; }
+
+    .stop-info { flex: 1; min-width: 0; }
+
+    .stop-name {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stop-times {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 3px;
+    }
+
+    .stop-time-block { display: flex; flex-direction: column; }
+    .stop-time-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--text-dim);
+    }
+    .stop-time-val {
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+    .stop-time-rt {
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      color: var(--red);
+    }
+
+    .stop-pf {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      margin-top: 3px;
+    }
+
+    .journey-loading {
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 13px;
+      font-style: italic;
+    }
+
+    .journey-error {
+      margin: 12px 20px;
+      padding: 10px 14px;
+      background: color-mix(in srgb, var(--red) 12%, var(--surface));
+      border: 1px solid color-mix(in srgb, var(--red) 35%, transparent);
+      color: var(--red);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 540px) {
+      .search-bar { flex-direction: column; border-radius: 16px; }
+      .sf + .sf { border-left: none; border-top: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="search-card">
+    <h1>Departure Board</h1>
+    <form id="search-form">
+      <div class="search-bar">
+
+        <!-- Station -->
+        <div class="sf">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 3"/>
+          </svg>
+          <div class="sf-body">
+            <div class="sf-label">Station</div>
+            <input type="text" id="inp-station" placeholder="e.g. Köln Hbf">
+          </div>
+        </div>
+
+        <!-- Destination filter -->
+        <div class="sf">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/>
+          </svg>
+          <div class="sf-body">
+            <div class="sf-label">Where to? (optional)</div>
+            <input type="text" id="inp-dest" placeholder="Filter by destination">
+          </div>
+        </div>
+
+        <!-- Date & time -->
+        <div class="sf" style="flex: 0 0 auto; min-width: 200px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <div class="sf-body">
+            <div class="sf-label">Departure</div>
+            <input type="datetime-local" id="inp-datetime">
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Mode chips -->
+      <div class="chips">
+        <label class="chip"><input type="checkbox" name="mode" value="ICE"> ICE</label>
+        <label class="chip"><input type="checkbox" name="mode" value="EC_IC"> EC / IC</label>
+        <label class="chip"><input type="checkbox" name="mode" value="REGIONAL"> Regional</label>
+        <label class="chip"><input type="checkbox" name="mode" value="SBAHN"> S-Bahn</label>
+        <label class="chip"><input type="checkbox" name="mode" value="UBAHN"> U-Bahn</label>
+        <label class="chip"><input type="checkbox" name="mode" value="TRAM"> Tram</label>
+        <label class="chip"><input type="checkbox" name="mode" value="BUS"> Bus</label>
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" id="btn-search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          Search
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div id="error-box" class="error-box"></div>
+  <div id="board-meta" class="board-meta"></div>
+  <div id="status">Waiting for results…</div>
+
+  <div class="results-card" id="results-card" style="display:none">
+    <table id="results">
+      <thead>
+        <tr>
+          <th>Train</th>
+          <th>Destination / Via</th>
+          <th>Platform</th>
+          <th>Scheduled</th>
+          <th>Real-time</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Journey detail panel (second view) -->
+  <div class="journey-panel" id="journey-panel" style="display:none">
+    <div class="journey-header">
+      <button class="btn-back" id="btn-back" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Departures
+      </button>
+      <div>
+        <div class="journey-title" id="journey-title">Loading…</div>
+        <div class="journey-subtitle" id="journey-subtitle"></div>
+      </div>
+    </div>
+    <div id="journey-body"></div>
+  </div>
+
+  <script type="module">
+    import { App } from "https://unpkg.com/@modelcontextprotocol/ext-apps@0.4.0/app-with-deps";
+
+    const app = new App({ name: "Departures View", version: "1.0.0" });
+
+    function fmtTime(isoStr) {
+      if (!isoStr) return '';
+      try { return new Date(isoStr).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }); }
+      catch { return isoStr.substring(11, 16); }
+    }
+
+    function toIso(val) {
+      if (!val) return null;
+      return val.length === 16 ? val + ':00' : val;
+    }
+
+    function checkedModes() {
+      const checked = Array.from(document.querySelectorAll('input[name=mode]:checked')).map(el => el.value);
+      return checked.length > 0 ? checked : null;
+    }
+
+    function setLoading(on) {
+      const btn = document.getElementById('btn-search');
+      btn.disabled = on;
+      btn.innerHTML = on
+        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Searching\u2026'
+        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Search';
+    }
+
+    function showError(msg) {
+      const box = document.getElementById('error-box');
+      box.textContent = msg;
+      box.style.display = '';
+      document.getElementById('status').style.display = 'none';
+      document.getElementById('results-card').style.display = 'none';
+    }
+
+    function renderResults(data) {
+      document.getElementById('error-box').style.display = 'none';
+      if (data.error) { showError('Error: ' + data.error); return; }
+
+      const station = data.station || {};
+      const meta = document.getElementById('board-meta');
+      meta.textContent = station.name
+        ? station.name + (data.boardTime ? '  \u2014  ' + fmtTime(data.boardTime) : '')
+        : '';
+
+      const departures = data.departures || [];
+      const tbody = document.getElementById('tbody');
+      tbody.innerHTML = '';
+
+      if (departures.length === 0) {
+        document.getElementById('status').textContent = 'No departures found.';
+        document.getElementById('status').style.display = '';
+        document.getElementById('results-card').style.display = 'none';
+        return;
+      }
+
+      departures.forEach(d => {
+        const tr = tbody.insertRow();
+        tr.dataset.journeyId = d.journey_id || '';
+        if (d.is_cancelled) tr.className = 'cancelled-row';
+
+        // Train badge
+        const trainCell = tr.insertCell();
+        const badge = document.createElement('span');
+        badge.className = 'train-badge';
+        badge.textContent = d.train_name || '';
+        trainCell.appendChild(badge);
+
+        // Destination + via (combined)
+        const destCell = tr.insertCell();
+        const destDiv = document.createElement('div');
+        destDiv.className = 'destination';
+        destDiv.textContent = d.destination || '';
+        destCell.appendChild(destDiv);
+        const vias = (d.via_stations || []).slice(0, 3);
+        if (vias.length) {
+          const viaDiv = document.createElement('div');
+          viaDiv.className = 'via';
+          viaDiv.textContent = vias.join(' \u2192 ');
+          destCell.appendChild(viaDiv);
+        }
+
+        // Platform
+        const pfCell = tr.insertCell();
+        const pfText = (d.rt_platform && d.rt_platform !== d.platform)
+          ? d.platform + '\u2192' + d.rt_platform : (d.platform || '\u2014');
+        const pfBadge = document.createElement('span');
+        pfBadge.className = 'pf-badge';
+        pfBadge.textContent = pfText;
+        pfCell.appendChild(pfBadge);
+
+        // Scheduled
+        const schedCell = tr.insertCell();
+        schedCell.className = 'time';
+        schedCell.textContent = fmtTime(d.scheduled_departure);
+
+        // Real-time
+        const rtCell = tr.insertCell();
+        if (d.rt_departure && d.rt_departure !== d.scheduled_departure) {
+          rtCell.className = 'rt-time';
+          rtCell.textContent = fmtTime(d.rt_departure);
+        }
+
+        // Status
+        const statusCell = tr.insertCell();
+        if (d.is_cancelled) {
+          statusCell.className = 'status-canc';
+          statusCell.textContent = 'Cancelled';
+        } else if (d.delay_minutes > 0) {
+          statusCell.className = 'status-late';
+          statusCell.textContent = '+' + d.delay_minutes + ' min';
+        } else {
+          statusCell.className = 'status-ok';
+          statusCell.textContent = 'On time';
+        }
+      });
+
+      document.getElementById('status').style.display = 'none';
+      document.getElementById('results-card').style.display = '';
+    }
+
+    // Helper: fetch departures via callServerTool and render
+    async function fetchAndRender(args) {
+      setLoading(true);
+      try {
+        const result = await app.callServerTool({
+          name: 'get_departures',
+          arguments: {
+            station_name: args.station_name || '',
+            datetime_str: args.datetime_str || null,
+            transport_modes: args.transport_modes || null,
+            destination_filter: args.destination_filter || null,
+            max_results: args.max_results || 20,
+          }
+        });
+        const res = result?.content?.find(c => c.type === 'resource');
+        if (!res) { showError('No result received.'); return; }
+        renderResults(JSON.parse(res.resource.text));
+      } catch (err) {
+        showError(err.message || 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // ontoolinput fires with tool arguments BEFORE the tool executes —
+    // use it to pre-fill the form and fetch results via callServerTool.
+    app.ontoolinput = async ({ arguments: args }) => {
+      if (!args) return;
+      if (args.station_name) {
+        document.getElementById('inp-station').value = args.station_name;
+      }
+      if (args.destination_filter) {
+        document.getElementById('inp-dest').value = args.destination_filter;
+      }
+      if (args.datetime_str) {
+        document.getElementById('inp-datetime').value = args.datetime_str.slice(0, 16);
+      }
+      if (Array.isArray(args.transport_modes)) {
+        document.querySelectorAll('input[name=mode]').forEach(cb => {
+          cb.checked = args.transport_modes.includes(cb.value);
+        });
+      }
+      await fetchAndRender(args);
+    };
+
+    // ontoolresult as fallback — fires when the LLM-triggered call completes.
+    app.ontoolresult = (toolResult) => {
+      const content = Array.isArray(toolResult) ? toolResult : (toolResult?.content ?? []);
+      const res = content.find(c => c.type === 'resource');
+      if (!res) return;
+      try {
+        const data = JSON.parse(res.resource.text);
+        if (data.station?.name) {
+          document.getElementById('inp-station').value = data.station.name;
+        }
+        renderResults(data);
+      } catch (e) { /* ignore if already rendered via ontoolinput */ }
+    };
+
+    document.getElementById('search-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const station = document.getElementById('inp-station').value.trim();
+      if (!station) { showError('Please enter a station name.'); return; }
+      await fetchAndRender({
+        station_name: station,
+        datetime_str: toIso(document.getElementById('inp-datetime').value),
+        transport_modes: checkedModes(),
+        destination_filter: document.getElementById('inp-dest').value.trim() || null,
+        max_results: 20,
+      });
+    });
+
+    // ── Journey panel helpers ──────────────────────────────────────────────
+
+    function showDepartureView() {
+      document.getElementById('journey-panel').style.display = 'none';
+      document.getElementById('search-form').style.display = '';
+      document.getElementById('error-box').style.display = 'none';
+      document.getElementById('board-meta').style.display = '';
+      const hasDepartures = document.getElementById('tbody').children.length > 0;
+      document.getElementById('results-card').style.display = hasDepartures ? '' : 'none';
+      document.getElementById('status').style.display = hasDepartures ? 'none' : '';
+    }
+
+    function showJourneyView(trainName, subtitle) {
+      document.getElementById('search-form').style.display = 'none';
+      document.getElementById('board-meta').style.display = 'none';
+      document.getElementById('status').style.display = 'none';
+      document.getElementById('results-card').style.display = 'none';
+      document.getElementById('error-box').style.display = 'none';
+      document.getElementById('journey-title').textContent = trainName || 'Loading…';
+      document.getElementById('journey-subtitle').textContent = subtitle || '';
+      document.getElementById('journey-body').innerHTML =
+        '<div class="journey-loading">Fetching stops…</div>';
+      document.getElementById('journey-panel').style.display = '';
+    }
+
+    function renderJourney(data) {
+      const body = document.getElementById('journey-body');
+      if (data.error) {
+        body.innerHTML = `<div class="journey-error">${data.error}</div>`;
+        return;
+      }
+      const stops = data.stops || [];
+      if (!stops.length) {
+        body.innerHTML = '<div class="journey-loading">No stops found.</div>';
+        return;
+      }
+
+      const first = stops[0];
+      const last = stops[stops.length - 1];
+      const origin = first.name || '';
+      const dest = last.name || '';
+      document.getElementById('journey-title').textContent = data.train_name || '';
+      document.getElementById('journey-subtitle').textContent =
+        origin && dest ? `${origin} → ${dest}` : '';
+
+      const list = document.createElement('div');
+      list.className = 'stops-list';
+
+      stops.forEach((s, idx) => {
+        const isFirst = idx === 0;
+        const isLast = idx === stops.length - 1;
+
+        const stopEl = document.createElement('div');
+        const classes = ['stop'];
+        if (isFirst || isLast) classes.push('stop-endpoint');
+        if (s.is_cancelled) classes.push('stop-cancelled');
+        stopEl.className = classes.join(' ');
+
+        const dot = document.createElement('div');
+        dot.className = 'stop-dot';
+
+        const info = document.createElement('div');
+        info.className = 'stop-info';
+
+        const name = document.createElement('div');
+        name.className = 'stop-name';
+        name.textContent = s.name || '';
+        info.appendChild(name);
+
+        const times = document.createElement('div');
+        times.className = 'stop-times';
+
+        function addTime(label, sched, rt) {
+          if (!sched) return;
+          const block = document.createElement('div');
+          block.className = 'stop-time-block';
+          const lbl = document.createElement('div');
+          lbl.className = 'stop-time-label';
+          lbl.textContent = label;
+          const val = document.createElement('div');
+          val.className = 'stop-time-val';
+          val.textContent = fmtTime(sched);
+          block.appendChild(lbl);
+          block.appendChild(val);
+          if (rt && rt !== sched) {
+            const rtEl = document.createElement('div');
+            rtEl.className = 'stop-time-rt';
+            rtEl.textContent = fmtTime(rt);
+            block.appendChild(rtEl);
+          }
+          times.appendChild(block);
+        }
+
+        if (!isFirst) addTime('Arr', s.sched_arr, s.rt_arr);
+        if (!isLast)  addTime('Dep', s.sched_dep, s.rt_dep);
+        info.appendChild(times);
+
+        if (s.platform) {
+          const pf = document.createElement('div');
+          pf.className = 'stop-pf';
+          const rtPf = s.rt_platform && s.rt_platform !== s.platform;
+          pf.textContent = 'Pl. ' + (rtPf ? `${s.platform} → ${s.rt_platform}` : s.platform);
+          if (rtPf) pf.style.color = 'var(--red)';
+          info.appendChild(pf);
+        }
+
+        stopEl.appendChild(dot);
+        stopEl.appendChild(info);
+        list.appendChild(stopEl);
+      });
+
+      body.innerHTML = '';
+      body.appendChild(list);
+    }
+
+    async function loadJourney(journeyId, trainName, destination) {
+      showJourneyView(trainName, destination ? `to ${destination}` : '');
+      try {
+        const result = await app.callServerTool({
+          name: 'get_journey',
+          arguments: { journey_id: journeyId }
+        });
+        const res = result?.content?.find(c => c.type === 'resource');
+        if (!res) {
+          document.getElementById('journey-body').innerHTML =
+            '<div class="journey-error">No data received.</div>';
+          return;
+        }
+        renderJourney(JSON.parse(res.resource.text));
+      } catch (err) {
+        document.getElementById('journey-body').innerHTML =
+          `<div class="journey-error">${err.message || 'Unknown error'}</div>`;
+      }
+    }
+
+    document.getElementById('btn-back').addEventListener('click', showDepartureView);
+
+    document.getElementById('tbody').addEventListener('click', (e) => {
+      const tr = e.target.closest('tr[data-journey-id]');
+      if (!tr) return;
+      const journeyId = tr.dataset.journeyId;
+      const trainName = tr.querySelector('.train-badge')?.textContent || '';
+      const destination = tr.querySelector('.destination')?.textContent || '';
+      if (journeyId) loadJourney(journeyId, trainName, destination);
+    });
+
+    await app.connect();
+  </script>
+</body>
+</html>
